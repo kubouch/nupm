@@ -170,6 +170,31 @@ def install-path [
     }
 }
 
+def fetch-package [
+    package: string  # Name of the package
+] {
+    $env.NUPM_REGISTRIES | items {|name, path|
+        print $path
+        let registry = if ($path | path type) == file {
+            open $path
+        } else {
+            try {
+                http get $path
+            } catch {
+                throw-error $'Cannot open "($path)" as a file or URL.'
+            }
+        }
+
+        if table in ($registry | describe) and name in ($registry | columns) {
+            {
+                name: $name
+                pkgs: ($registry | where name == $package)
+            }
+        }
+    }
+    | compact
+}
+
 # Install a nupm package
 export def main [
     package # Name, path, or link to the package
@@ -182,8 +207,8 @@ export def main [
     }
 
     if not $path {
-        throw-error "missing_required_option" "`nupm install` currently requires a `--path` flag"
+        fetch-package $package
     }
 
-    install-path $package --force $force
+    # install-path $package --force $force
 }
