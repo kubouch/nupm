@@ -2,6 +2,8 @@ use std log
 
 use utils/dirs.nu [ nupm-home-prompt script-dir module-dir tmp-dir ]
 use utils/log.nu throw-error
+use utils/version.nu sort-pkgs
+use utils/misc.nu check-cols
 
 def open-package-file [dir: path] {
     let package_file = $dir | path join "package.nuon"
@@ -173,23 +175,58 @@ def install-path [
 def fetch-package [
     package: string  # Name of the package
 ] {
-    $env.NUPM_REGISTRIES | items {|name, path|
+    $env.NUPM_REGISTRIES 
+    | items {|name, path|
         print $path
         let registry = if ($path | path type) == file {
             open $path
         } else {
             try {
-                http get $path
+                let reg = http get $path
+
+                if local in $reg {
+                    throw-error ("Can't have local packages in online registry"
+                        + $" '($path)'.")
+                }
+
+                $reg
             } catch {
-                throw-error $'Cannot open "($path)" as a file or URL.'
+                throw-error $"Cannot open '($path)' as a file or URL."
             }
         }
 
-        if table in ($registry | describe) and name in ($registry | columns) {
-            {
-                name: $name
-                pkgs: ($registry | where name == $package)
-            }
+        $registry | check-cols --missing-ok "registry" [ git local ] | ignore
+
+        let pkgs_local = $registry.local? 
+            | default [] 
+            | check-cols "local packages" [ name version path ]
+            | where name == $package
+
+        let pkgs_git = $registry.git? 
+            | default [] 
+            | check-cols "git packages" [ name version url revision path ]
+            | where name == $package
+
+        # Detect duplicate versions
+        let all_versions = $pkgs_local.version? 
+            | default []
+            | append ($pkgs_git.version? | default [])
+
+        if ($all_versions | uniq | length) != ($all_versions | length) {
+            throw-error ($'Duplicate versions of package ($package) detected'
+                + $' in registry ($name).')
+        }
+
+        let pkgs = $pkgs_local
+            | insert type local
+            | insert url null
+            | insert revision null
+            | append ($pkgs_git | insert type git)
+            | sort-pkgs
+
+        {
+            name: $name
+            pkgs: $pkgs
         }
     }
     | compact
