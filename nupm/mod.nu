@@ -1,5 +1,8 @@
-use utils/dirs.nu [ 
-    DEFAULT_NUPM_HOME DEFAULT_NUPM_TEMP DEFAULT_NUPM_CACHE nupm-home-prompt 
+export use install.nu
+export use test.nu
+
+use utils/dirs.nu [
+    DEFAULT_NUPM_HOME DEFAULT_NUPM_TEMP DEFAULT_NUPM_CACHE nupm-home-prompt
 ]
 
 export-env {
@@ -16,7 +19,7 @@ export-env {
     # TODO: Remove local and kubouch which are just for testing
     # TODO: Move setting this to config file
     # TODO: Add `nupm registry` for showing info about registries
-    # TODO: Add `nupm registry add/remove` to add/remove registry from config 
+    # TODO: Add `nupm registry add/remove` to add/remove registry from config
     #       file (requires nuon formatting).
     $env.NUPM_REGISTRIES = {
         # nupm: ($env.NUPM_HOME | path join registry.nuon)
@@ -28,7 +31,7 @@ export-env {
 
 # Nushell Package Manager
 export def main []: nothing -> nothing {
-    nupm-home-prompt --no-confirm false
+    nupm-home-prompt
 
     print 'enjoy nupm!'
 }

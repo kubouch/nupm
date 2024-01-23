@@ -34,9 +34,9 @@ def open-package-file [dir: path] {
 #
 # Input: Scripts taken from 'package.nuon'
 def install-scripts [
-    pkg_dir: path        # Package directory
-    scripts_dir: path    # Target directory where to install
-    --force(-f): bool    # Overwrite already installed scripts
+    pkg_dir: path      # Package directory
+    scripts_dir: path  # Target directory where to install
+    --force(-f)        # Overwrite already installed scripts
 ]: list<path> -> nothing {
     each {|script|
         let src_path = $pkg_dir | path join $script
@@ -68,9 +68,9 @@ def install-scripts [
 #
 # Input: Modules taken from 'package.nuon'
 def install-modules [
-    pkg_dir: path        # Package directory
-    modules_dir: path    # Target directory where to install
-    --force(-f): bool    # Overwrite already installed modules
+    pkg_dir: path      # Package directory
+    modules_dir: path  # Target directory where to install
+    --force(-f)        # Overwrite already installed modules
 ]: list<path> -> nothing {
     each {|module|
         let src_path = $pkg_dir | path join $module
@@ -101,8 +101,8 @@ def install-modules [
 
 # Install package from a directory containing 'project.nuon'
 def install-path [
-    pkg_dir: path      # Directory (hopefully) containing 'package.nuon'
-    --force(-f): bool  # Overwrite already installed package
+    pkg_dir: path  # Directory (hopefully) containing 'package.nuon'
+    --force(-f)    # Overwrite already installed package
 ] {
     let pkg_dir = $pkg_dir | path expand
 
@@ -120,11 +120,11 @@ def install-path [
                 []
             }
             | append ($package.modules? | default [])
-            | install-modules $pkg_dir (module-dir --ensure) --force $force
+            | install-modules $pkg_dir (module-dir --ensure) --force=$force
 
             $package.scripts?
             | default []
-            | install-scripts $pkg_dir (script-dir --ensure) --force $force
+            | install-scripts $pkg_dir (script-dir --ensure) --force=$force
         },
         "script" => {
             let default_name = $"($package.name).nu"
@@ -135,11 +135,11 @@ def install-path [
                 []
             }
             | append ($package.scripts? | default [])
-            | install-scripts $pkg_dir (script-dir --ensure) --force $force
+            | install-scripts $pkg_dir (script-dir --ensure) --force=$force
 
-            $package.modules? 
+            $package.modules?
             | default []
-            | install-modules $pkg_dir (module-dir --ensure) --force $force
+            | install-modules $pkg_dir (module-dir --ensure) --force=$force
         },
         "custom" => {
             let build_file = $pkg_dir | path join "build.nu"
@@ -176,7 +176,7 @@ def fetch-package [
     package: string  # Name of the package
     --registry: string  # Which registry to use
 ] {
-    let regs = $env.NUPM_REGISTRIES 
+    let regs = $env.NUPM_REGISTRIES
         | items {|name, path|
             if ($registry | is-empty) or ($name == $registry) or ($path == $registry) {
                 print $path
@@ -199,18 +199,18 @@ def fetch-package [
 
                 $registry | check-cols --missing-ok "registry" [ git local ] | ignore
 
-                let pkgs_local = $registry.local? 
-                    | default [] 
+                let pkgs_local = $registry.local?
+                    | default []
                     | check-cols "local packages" [ name version path ]
                     | where name == $package
 
-                let pkgs_git = $registry.git? 
-                    | default [] 
+                let pkgs_git = $registry.git?
+                    | default []
                     | check-cols "git packages" [ name version url revision path ]
                     | where name == $package
 
                 # Detect duplicate versions
-                let all_versions = $pkgs_local.version? 
+                let all_versions = $pkgs_local.version?
                     | default []
                     | append ($pkgs_git.version? | default [])
 
@@ -256,7 +256,7 @@ export def main [
     --no-confirm # Allows to bypass the interactive confirmation, useful for scripting
     --registry: string # Which registry to use
 ]: nothing -> nothing {
-    if not (nupm-home-prompt --no-confirm $no_confirm) {
+    if not (nupm-home-prompt --no-confirm=$no_confirm) {
         return
     }
 
@@ -264,5 +264,5 @@ export def main [
         fetch-package $package --registry $registry
      }
 
-    # install-path $package --force $force
+    # install-path $package --force=$force
 }
